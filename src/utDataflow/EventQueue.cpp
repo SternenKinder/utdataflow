@@ -153,14 +153,17 @@ void EventQueue::queue( std::vector< QueueData >& events )
 
 		LOG4CPP_DEBUG( eventLogger, "Queueing event to port "
 			<< ( pos->pReceiverInfo ? pos->pReceiverInfo->pPort->fullName() : "(unknown)" ) 
-			<< ", priority=" << pos->priority );
+      << ", priority=" << pos->priority
+      << ", nQueuedEvents = " << pos->pReceiverInfo->nQueuedEvents);
 
+    // add only, if there is more space in the queue
+    if (pos->pReceiverInfo && (pos->pReceiverInfo->nQueuedEvents < pos->pReceiverInfo->nMaxQueueLength || pos->pReceiverInfo->nMaxQueueLength < 0))
+    {
 		// sort event into queue
 		if ( m_Queue.empty() )
 			m_Queue.push_back( *pos );
-		else
 			// adding an event to the back will be a common case
-			if ( m_Queue.back().priority <= pos->priority )
+      else if (m_Queue.back().priority <= pos->priority)
 				m_Queue.push_back( *pos );
 			else
 			{
@@ -173,6 +176,7 @@ void EventQueue::queue( std::vector< QueueData >& events )
 
 		if ( pos->pReceiverInfo )
 			pos->pReceiverInfo->nQueuedEvents++;
+    }
 	}
 
 	// Patrick Maier: Prevents the queue to be filled up when the receiving thread is paused (.NET, Java, etc.)
